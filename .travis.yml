@@ -1,0 +1,32 @@
+language: go
+
+sudo: required
+dist: trusty
+
+go:
+  - 1.7
+  - 1.8
+  - 1.9
+  - master
+  - tip
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - go: master
+    - go: tip
+
+cache: apt
+
+install:
+  - go get golang.org/x/tools/cmd/cover
+  - go get github.com/mattn/goveralls
+  - go get github.com/stretchr/testify/assert
+
+script:
+  - make travis
+  - goveralls -service=travis-ci
+
+#deploy:
+#  on:
+#    condition: $TRAVIS_GO_VERSION =~ ^1\.8\.[0-9]+$
