@@ -10,12 +10,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTokenizer(t *testing.T) {
+func TestTokenizerAndRestore(t *testing.T) {
 	tokenizer := New()
 
-	tokens := tokenizer.Tokenize("I believe life is an intelligent thing: that things aren't random.")
+	t.Run("normal delimiter", func(t *testing.T) {
+		str := "i love you, darling"
+		tokens := tokenizer.Tokenize(str)
+		restored := tokenizer.Restore(tokens)
+		assert.Equal(t, tokens, []string{"i", "love", "you", "darling"})
+		assert.Equal(t, restored, str)
+	})
 
-	assert.Equal(t, []string{"I", "believe", "life", "is", "an", "intelligent", "thing", "that", "things", "aren't", "random"}, tokens)
+	t.Run("Abnormal delimiter multiple spacing", func(t *testing.T) {
+		str := "I believe life is an intelligent thing:  that things aren't random."
+		tokens := tokenizer.Tokenize(str)
+		restored := tokenizer.Restore(tokens)
+		assert.Equal(t, tokens, []string{"I", "believe", "life", "is", "an", "intelligent", "thing", "that", "things", "aren't", "random"})
+		assert.Equal(t, restored, str)
+	})
 }
 
 func TestTokenizerWithSeparator(t *testing.T) {
