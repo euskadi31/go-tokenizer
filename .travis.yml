@@ -1,12 +1,13 @@
 language: go
 
 sudo: required
-dist: trusty
+dist: xenial
+
+env:
+  - GO111MODULE=on
 
 go:
-  - 1.7
-  - 1.8
-  - 1.9
+  - 1.x
   - master
   - tip
 
@@ -16,16 +17,11 @@ matrix:
     - go: master
     - go: tip
 
-cache: apt
-
 install:
-  - go get golang.org/x/tools/cmd/cover
-  - go get github.com/mattn/goveralls
-  - go get github.com/stretchr/testify/assert
+  - go get github.com/mattn/goveralls@master
 
 script:
-  - make travis
-  - goveralls -service=travis-ci
+  - goveralls -v -race -covermode=atomic -service=travis-ci
 
 #deploy:
 #  on:
