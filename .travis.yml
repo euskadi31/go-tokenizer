@@ -18,7 +18,7 @@ matrix:
     - go: tip
 
 install:
-  - go get github.com/mattn/goveralls
+  - go get github.com/mattn/goveralls@master
 
 script:
   - goveralls -v -race -covermode=atomic -service=travis-ci
