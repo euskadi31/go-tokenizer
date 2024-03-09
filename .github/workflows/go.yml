@@ -143,6 +143,7 @@ jobs:
         with:
           version: v1.55.2
           skip-pkg-cache: true
+          skip-cache: true
 
       - name: Coveralls
         uses: shogo82148/actions-goveralls@v1
