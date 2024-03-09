@@ -4,7 +4,7 @@
 
 package tokenizer
 
-// Tokenizer interface
+// Tokenizer interface.
 type Tokenizer interface {
 	KeepSeparator()
 	Tokenize(content string) []string
@@ -15,14 +15,14 @@ type tokenizer struct {
 	keepSep bool
 }
 
-// New Tokenizer
+// New Tokenizer.
 func New() Tokenizer {
 	return &tokenizer{
 		sep: convertSeparator("\t\n\r ,.:?\"!;()"),
 	}
 }
 
-// NewWithSeparator Tokenizer
+// NewWithSeparator Tokenizer.
 func NewWithSeparator(sep string) Tokenizer {
 	return &tokenizer{
 		sep: convertSeparator(sep),
@@ -54,10 +54,13 @@ func (t tokenizer) Tokenize(content string) []string {
 			if previousIsSep && !t.keepSep {
 				previousIsSep = true
 				lastCut++
+
 				continue
 			}
+
 			tokens = append(tokens, content[lastCut:i])
 			lastCut = i
+
 			if !t.keepSep {
 				lastCut++
 			}
