@@ -4,90 +4,124 @@
 
 package tokenizer
 
+import (
+	"unicode/utf8"
+)
+
+type Option func(*tokenizer)
+
+func WithSeparator(sep string) Option {
+	return func(t *tokenizer) {
+		t.sep = convertSeparator(sep)
+	}
+}
+
+func KeepSeparator() Option {
+	return func(t *tokenizer) {
+		t.keepSep = true
+	}
+}
+
 // Tokenizer interface.
 type Tokenizer interface {
-	KeepSeparator()
 	Tokenize(content string) []string
 }
 
 type tokenizer struct {
-	sep     [256]uint8
+	sep     map[rune]bool
 	keepSep bool
 }
 
-// New Tokenizer.
-func New() Tokenizer {
-	return &tokenizer{
+// New Tokenizer with options.
+func New(opts ...Option) Tokenizer {
+	t := &tokenizer{
 		sep: convertSeparator("\t\n\r ,.:?\"!;()"),
 	}
-}
 
-// NewWithSeparator Tokenizer.
-func NewWithSeparator(sep string) Tokenizer {
-	return &tokenizer{
-		sep: convertSeparator(sep),
+	for _, opt := range opts {
+		opt(t)
 	}
+
+	return t
 }
 
-func (t *tokenizer) KeepSeparator() {
-	t.keepSep = true
+func (t tokenizer) getCutsList(content string) []int {
+	length := len(content)
+
+	cut := make([]int, length)
+
+	lastPos := 0
+
+	for {
+		r, size := utf8.DecodeRuneInString(content[lastPos:])
+
+		if t.sep[r] {
+			cut[lastPos] = size
+		}
+
+		lastPos += size
+
+		if lastPos >= length {
+			break
+		}
+	}
+
+	return cut
 }
 
 func (t tokenizer) Tokenize(content string) []string {
-	length := len(content)
-	cut := make([]int, length+1)
-
-	for i := 0; i < length; i++ {
-		r := content[i]
-
-		if int(t.sep[r]) == 1 {
-			cut[i] = 1
-		}
-	}
+	cut := t.getCutsList(content)
 
 	tokens := []string{}
 	lastCut := 0
 	previousIsSep := false
+	remainingSkip := 0
 
-	for i := 0; i < length; i++ {
-		if cut[i] == 1 {
-			if previousIsSep && !t.keepSep {
-				previousIsSep = true
-				lastCut++
+	for i, size := range cut {
+		if size == 0 {
+			if remainingSkip > 0 {
+				remainingSkip--
 
 				continue
 			}
 
-			tokens = append(tokens, content[lastCut:i])
-			lastCut = i
-
-			if !t.keepSep {
-				lastCut++
-			}
-
-			previousIsSep = true
-		} else {
-			if t.keepSep && previousIsSep {
-				tokens = append(tokens, content[lastCut:i])
-				lastCut = i
-			}
-
 			previousIsSep = false
+
+			continue
 		}
+
+		if !previousIsSep {
+			tokens = append(tokens, content[lastCut:i])
+		}
+
+		lastCut = i + size
+		remainingSkip = size
+
+		if t.keepSep {
+			tokens = append(tokens, content[i:lastCut])
+		}
+
+		previousIsSep = true
 	}
 
-	if previousIsSep && t.keepSep || !previousIsSep {
+	if !previousIsSep {
 		tokens = append(tokens, content[lastCut:])
 	}
 
 	return tokens
 }
 
-func convertSeparator(sep string) [256]uint8 {
-	separators := [256]uint8{}
+func convertSeparator(sep string) map[rune]bool {
+	separators := map[rune]bool{}
 
-	for _, r := range sep {
-		separators[r] = 1
+	b := sep
+
+	for len(b) > 0 {
+		r, size := utf8.DecodeRuneInString(b)
+
+		separators[r] = true
+
+		b = b[size:]
 	}
 
 	return separators
