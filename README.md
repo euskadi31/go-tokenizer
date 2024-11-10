@@ -6,11 +6,15 @@
 | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | master | [![Go](https://github.com/euskadi31/go-tokenizer/actions/workflows/go.yml/badge.svg)](https://github.com/euskadi31/go-tokenizer/actions/workflows/go.yml) | [![Coveralls](https://img.shields.io/coveralls/euskadi31/go-tokenizer/master.svg)](https://coveralls.io/github/euskadi31/go-tokenizer?branch=master) |
 
+```sh
+go get -u github.com/euskadi31/go-tokenizer/v3
+```
+
 ```go
 import (
     "fmt"
 
-    "github.com/euskadi31/go-tokenizer"
+    "github.com/euskadi31/go-tokenizer/v3"
 )
 
 func main() {
