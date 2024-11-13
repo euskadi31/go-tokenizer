@@ -5,6 +5,7 @@
 package tokenizer
 
 import (
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -12,6 +13,7 @@ type Option func(*tokenizer)
 
 func WithSeparator(sep string) Option {
 	return func(t *tokenizer) {
+		t.mode = separatorModeLegacy
 		t.sep = convertSeparator(sep)
 	}
 }
@@ -22,20 +24,61 @@ func KeepSeparator() Option {
 	}
 }
 
+func WithUnicodeSeparator(tables ...*unicode.RangeTable) Option {
+	return func(t *tokenizer) {
+		t.mode = separatorModeUnicode
+
+		if len(tables) > 0 {
+			t.tables = tables
+
+			return
+		}
+
+		t.tables = []*unicode.RangeTable{
+			unicode.Punct,
+			unicode.Symbol,
+			unicode.Space,
+			unicode.Cc,
+		}
+	}
+}
+
+func WithIgnoreSeparators(runes ...rune) Option {
+	return func(t *tokenizer) {
+		t.ignoreSeparators = map[rune]bool{}
+
+		for _, r := range runes {
+			t.ignoreSeparators[r] = true
+		}
+	}
+}
+
 // Tokenizer interface.
 type Tokenizer interface {
 	Tokenize(content string) []string
 }
 
+type separatorMode int8
+
+const (
+	separatorModeLegacy separatorMode = iota
+	separatorModeUnicode
+)
+
 type tokenizer struct {
-	sep     map[rune]bool
-	keepSep bool
+	mode             separatorMode
+	sep              map[rune]bool
+	ignoreSeparators map[rune]bool
+	tables           []*unicode.RangeTable
+	keepSep          bool
 }
 
 // New Tokenizer with options.
 func New(opts ...Option) Tokenizer {
 	t := &tokenizer{
-		sep: convertSeparator("\t\n\r ,.:?\"!;()"),
+		mode:             separatorModeLegacy,
+		sep:              convertSeparator("\t\n\r ,.:?\"!;()"),
+		ignoreSeparators: convertSeparator("'"),
 	}
 
 	for _, opt := range opts {
@@ -43,6 +86,18 @@ func New(opts ...Option) Tokenizer {
 	}
 
 	return t
+}
+
+func (t tokenizer) isSeparator(r rune) bool {
+	if t.ignoreSeparators[r] {
+		return false
+	}
+
+	if t.mode == separatorModeUnicode {
+		return unicode.IsOneOf(t.tables, r)
+	}
+
+	return t.sep[r]
 }
 
 func (t tokenizer) getCutsList(content string) []int {
@@ -55,7 +110,7 @@ func (t tokenizer) getCutsList(content string) []int {
 	for {
 		r, size := utf8.DecodeRuneInString(content[lastPos:])
 
-		if t.sep[r] {
+		if t.isSeparator(r) {
 			cut[lastPos] = size
 		}
 
@@ -95,7 +150,7 @@ func (t tokenizer) Tokenize(content string) []string {
 		}
 
 		lastCut = i + size
-		remainingSkip = size
+		remainingSkip = (size - 1)
 
 		if t.keepSep {
 			tokens = append(tokens, content[i:lastCut])
